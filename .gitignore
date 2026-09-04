@@ -15,4 +15,6 @@ collect_plugins.exe
 compiled/
 build/
 CMakeFiles/
--p
+-pbuild/
+optimization
+optimization_gui
