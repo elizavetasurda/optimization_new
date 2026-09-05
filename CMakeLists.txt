@@ -21,7 +21,6 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # ============================================
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     find_package(PkgConfig REQUIRED)
-    
     pkg_check_modules(PFM libpfm4)
     if(PFM_FOUND)
         message(STATUS "PFM found via pkg-config")
@@ -31,7 +30,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     else()
         find_library(PFM_LIBRARY NAMES pfm)
         find_path(PFM_INCLUDE_DIR perfmon/pfmlib.h)
-        
         if(PFM_LIBRARY AND PFM_INCLUDE_DIR)
             message(STATUS "PFM found manually")
             target_include_directories(${PROJECT_NAME} PRIVATE ${PFM_INCLUDE_DIR})
@@ -40,7 +38,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             message(FATAL_ERROR "PFM library not found! Install libpfm4-dev")
         endif()
     endif()
-    
     target_compile_definitions(${PROJECT_NAME} PRIVATE __linux__)
     target_link_libraries(${PROJECT_NAME} PRIVATE ${CMAKE_DL_LIBS})
 else()
@@ -71,21 +68,15 @@ message(STATUS "========================================")
 message(STATUS "Project: ${PROJECT_NAME}")
 message(STATUS "Platform: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "========================================")
+
 # ============================================
-# GUI (Qt)
+# GUI (Qt) — ТОЛЬКО Qt6 С ГРАФИКАМИ
 # ============================================
 option(BUILD_GUI "Build Qt GUI wrapper" ON)
 if(BUILD_GUI)
-    # Сначала пробуем найти Qt6 (у вас как раз он через qt6-base-dev)
-    find_package(Qt6 COMPONENTS Widgets QUIET)
-    if(NOT Qt6_FOUND)
-        # Если Qt6 нет — пробуем Qt5, чтобы код работал и на других машинах
-        find_package(Qt5 5.15 COMPONENTS Widgets REQUIRED)
-    endif()
+    #=== ИСПОЛЬЗУЕМ ТОЛЬКО Qt6 ===
+    find_package(Qt6 REQUIRED COMPONENTS Widgets Charts)
 
-    # AUTOMOC говорит CMake автоматически прогонять каждый .h файл с Q_OBJECT
-    # через moc (Meta-Object Compiler) — это генератор, который "оживляет"
-    # сигналы/слоты. Без этой строки Q_OBJECT просто не заработает.
     set(CMAKE_AUTOMOC ON)
 
     add_executable(optimization_gui
@@ -95,12 +86,11 @@ if(BUILD_GUI)
         gui/OptimizationRunner.cpp
     )
 
-    # Линкуем нужную версию Qt Widgets, какая нашлась
     target_link_libraries(optimization_gui PRIVATE
-        $<IF:$<TARGET_EXISTS:Qt6::Widgets>,Qt6::Widgets,Qt5::Widgets>
+        Qt6::Widgets
+        Qt6::Charts
     )
 
-    # Копируем готовый бинарник в корень репозитория (как и для optimization)
     add_custom_command(TARGET optimization_gui POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
             $<TARGET_FILE:optimization_gui>

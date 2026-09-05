@@ -2,20 +2,24 @@
 #include "ListEditor.h"
 #include "OptimizationRunner.h"
 
-#include <QVBoxLayout>//вертикальная раскладка
-#include <QHBoxLayout>//горизонтальная раскладка
-#include <QLineEdit>//поле ввода
-#include <QPlainTextEdit>//поле вывода
-#include <QCheckBox>//галочка
-#include <QPushButton>//кнопки
-#include <QLabel>//текстовая метка
-#include <QFileDialog>//декстовая метка
-#include <QMessageBox>//всплывающее сообщение
-#include <QDir>//работа с директориями
+#include <QVBoxLayout>      //вертикальная раскладка
+#include <QHBoxLayout>      //горизонтальная раскладка
+#include <QLineEdit>        //поле ввода
+#include <QPlainTextEdit>   //поле вывода
+#include <QCheckBox>        //галочка
+#include <QPushButton>      //кнопки
+#include <QLabel>           //текстовая метка
+#include <QFileDialog>      //диалог выбора файла
+#include <QMessageBox>      //всплывающее сообщение
+#include <QDir>             //работа с директориями
+
+//ДЛЯ ГРАФИКОВ (Qt Charts)
+#include <QtCharts/QChart>
+#include <QtCharts/QValueAxis>
 
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) { //конструктор — создание всего интерфейса
     setWindowTitle("Optimization — графический интерфейс");
-    resize(820, 640);   //стартовый размер окна в пикселях
+    resize(820, 700);   //чуть увеличила высоту для графика
 
     //central — виджет, который займёт всю центральную область окна.
     //у QMainWindow должен быть central widget, иначе некуда класть элементы
@@ -59,6 +63,27 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) { //констру
     //говорит layout эта область должна занимать всё оставшееся свободное место,
     //в отличие от полей ввода выше, у которых фиксированная высота
 
+    //ОБЛАСТЬ ДЛЯ ГРАФИКА (Qt Charts)
+    //создаём линию для данных
+    series = new QLineSeries();
+    series->setName("Значение функции");
+
+    //создаём сам график
+    auto* chart = new QChart();
+    chart->addSeries(series);
+    chart->createDefaultAxes();
+    chart->setTitle("График сходимости");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    chart->legend()->setVisible(true);
+
+    //создаём виджет для отображения графика
+    chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setMinimumHeight(250);                    //минимальная высота, чтобы график был виден
+
+    //добавляем график в основной layout (тоже растягивается)
+    mainLayout->addWidget(chartView, 1);
+
     setCentralWidget(central);   //регистрируем central как содержимое окна
 
     //создаём главную часть — OptimizationRunner. "this" делает MainWindow его владельцем
@@ -85,6 +110,16 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) { //констру
         outputView->appendPlainText(QString("\n[Процесс завершён, код: %1]").arg(code));
         runButton->setEnabled(true);
     });
+
+    //ПОДКЛЮЧАЕМ ДАННЫЕ ДЛЯ ГРАФИКА
+    //когда приходят данные с итерациями — добавляем точки на график
+    connect(runner, &OptimizationRunner::iterationData, this, [this](int iter, double value) {
+        //добавляем точку (итерация, значение)
+        series->append(iter, value);
+
+        //обновляем график
+        chartView->chart()->update();
+    });
 }
 
 void MainWindow::browseExecutable() {
@@ -104,10 +139,16 @@ void MainWindow::runOptimization() {
         return;
     }
     outputView->clear();//очищаем окно вывода
+
+    //ОЧИЩАЕМ ГРАФИК ПЕРЕД НОВЫМ ЗАПУСКОМ
+    series->clear();              //удаляем все старые точки
+    chartView->chart()->update(); //перерисовываем пустой график
+
     runButton->setEnabled(false);   //блокируем повторный клик, пока идёт выполнение
     runner->run(exePathEdit->text().trimmed(), methodEditor->items(), functions,
                 noAnalysisCheck->isChecked());
 }
+
 //показать app.log
 void MainWindow::showAppLog() {
     outputView->appendPlainText("\n--- app.log ---\n" +

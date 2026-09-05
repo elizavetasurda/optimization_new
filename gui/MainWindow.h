@@ -3,12 +3,15 @@
 //QMainWindow — это готовый каркас окна в Qt: у него уже есть место под меню,
 //панель инструментов и центральную область (setCentralWidget), куда мы вставим свой интерфейс
 
+#include <QtCharts/QChartView>   //виджет для отображения графика
+#include <QtCharts/QLineSeries>  //линия графика (точки, соединённые линией)
+
 class ListEditor;
 class OptimizationRunner;
-class QLineEdit;//поле ввода
-class QPlainTextEdit;//многострочное поле для вывода
-class QCheckBox;//галочка
-class QPushButton;//кнопки
+class QLineEdit;           //поле ввода
+class QPlainTextEdit;      //многострочное поле для вывода
+class QCheckBox;           //галочка
+class QPushButton;         //кнопки
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -35,4 +38,8 @@ private:
 
     //основа запуска вынесена сюда, MainWindow только подписывается на его сигналы и обновляет интерфейс
     OptimizationRunner* runner;
+
+    //ДЛЯ ГРАФИКОВ (Qt Charts)
+    QChartView* chartView;   //виджет, который отображает график (область с осями)
+    QLineSeries* series;     //линия графика (точки, соединённые линией)
 };

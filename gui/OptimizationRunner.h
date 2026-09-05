@@ -29,6 +29,7 @@ signals:
     void errorLine(const QString& text);       // пришла новая строка из stderr программы
     void processFinished(int exitCode);        // программа завершилась, вот код возврата
     void failedToStart(const QString& reason); // не получилось запустить (например, файла нет)
+    void iterationData(int iteration, double value);
 
 private:
     QProcess* process;//для запуска внешней проги
