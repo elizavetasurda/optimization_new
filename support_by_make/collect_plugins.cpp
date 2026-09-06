@@ -70,10 +70,10 @@ int main(int argc, char* argv[]) {
         fs::path p(plugins[i]);
         std::string name = p.stem().string();   // имя без пути и расширения
         if (i == 0) {
-            file << "    if (plugin_name == \"" << name << ".cpp\") "
+            file << "    if (plugin_name == \"" << name << ".cpp\" || plugin_name == \"" << name << "\") "
                  << "func(" << name << "<T>());\n";
         } else {
-            file << "    else if (plugin_name == \"" << name << ".cpp\") "
+            file << "    else if (plugin_name == \"" << name << ".cpp\" || plugin_name == \"" << name << "\") "
                  << "func(" << name << "<T>());\n";
         }
     }

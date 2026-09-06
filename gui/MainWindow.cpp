@@ -64,14 +64,27 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) { //констру
     //в отличие от полей ввода выше, у которых фиксированная высота
 
     //ОБЛАСТЬ ДЛЯ ГРАФИКА (Qt Charts)
-    //создаём линию для данных
     series = new QLineSeries();
     series->setName("Значение функции");
 
     //создаём сам график
     auto* chart = new QChart();
     chart->addSeries(series);
-    chart->createDefaultAxes();
+
+    axisX = new QValueAxis();
+    axisX->setTitleText("Итерация");
+    axisX->setLabelFormat("%d");
+    axisX->setRange(0, 1);
+
+    axisY = new QValueAxis();
+    axisY->setTitleText("Значение функции");
+    axisY->setRange(0, 1);
+
+    chart->addAxis(axisX, Qt::AlignBottom);
+    chart->addAxis(axisY, Qt::AlignLeft);
+    series->attachAxis(axisX);
+    series->attachAxis(axisY);
+
     chart->setTitle("График сходимости");
     chart->setAnimationOptions(QChart::SeriesAnimations);
     chart->legend()->setVisible(true);
@@ -117,6 +130,19 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) { //констру
         //добавляем точку (итерация, значение)
         series->append(iter, value);
 
+        if (!hasData) {
+            minY = maxY = value;
+            hasData = true;
+        } else {
+            minY = std::min(minY, value);
+            maxY = std::max(maxY, value);
+        }
+
+        axisX->setRange(0, std::max(1, iter));
+        double pad = (maxY - minY) * 0.1;
+        if (pad < 1e-9) pad = std::abs(maxY) * 0.1 + 1e-6;
+        axisY->setRange(minY - pad, maxY + pad);
+
         //обновляем график
         chartView->chart()->update();
     });
@@ -142,8 +168,8 @@ void MainWindow::runOptimization() {
 
     //ОЧИЩАЕМ ГРАФИК ПЕРЕД НОВЫМ ЗАПУСКОМ
     series->clear();              //удаляем все старые точки
+    hasData = false;              //сбрасываем накопленный диапазон значений
     chartView->chart()->update(); //перерисовываем пустой график
-
     runButton->setEnabled(false);   //блокируем повторный клик, пока идёт выполнение
     runner->run(exePathEdit->text().trimmed(), methodEditor->items(), functions,
                 noAnalysisCheck->isChecked());

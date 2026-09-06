@@ -5,6 +5,7 @@
 
 #include <QtCharts/QChartView>   //виджет для отображения графика
 #include <QtCharts/QLineSeries>  //линия графика (точки, соединённые линией)
+#include <QtCharts/QValueAxis>   //оси графика с ручным управлением диапазоном
 
 class ListEditor;
 class OptimizationRunner;
@@ -42,4 +43,8 @@ private:
     //ДЛЯ ГРАФИКОВ (Qt Charts)
     QChartView* chartView;   //виджет, который отображает график (область с осями)
     QLineSeries* series;     //линия графика (точки, соединённые линией)
+    QValueAxis* axisX = nullptr;
+    QValueAxis* axisY = nullptr;
+    double minY = 0.0, maxY = 0.0;
+    bool hasData = false;
 };
