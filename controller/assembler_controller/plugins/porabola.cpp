@@ -1,57 +1,75 @@
-#define _USE_MATH_DEFINES 
 #include <functional>
 #include <cmath>
 #include <iostream>
-#include <string>
-#include "../../logger_controller/handler.hpp"
 
-namespace porabola_name{
 const float EPS = 1e-6;
-const float e = M_E; 
 
-[[maybe_unused]] static float target_f(float x) {
-    return std::pow((x-2), 2) + std::sin(x)*x;
+float f(float x) {
+    return (x - 2) * (x - 2) + std::sin(x) * x;
 }
-template<typename T>
-T f(std::function<T(T)> target_f, T a, T c) {
-    T b = (c + a) / 2;
-    T x = b;          
-    T b_old = b;   
-    int iter = 0;
-    if (logger) logger->info("Iteration " + std::to_string(iter) + ": value = " + std::to_string(target_f(b)));
+
+float Metog_Porabola(std::function<float(float)> f, float a, float c) {
+    float b = (c + a) / 2;
+    float x = b;          
+    float b_old = b;   
+
+    float fa = f(a);
+    float fb = f(b);
+    float fc = f(c);
+    float fb_old = fb;
 
     do {
-        iter++;
         b_old = b;       
-        T znam = (c - b) * target_f(a) + (a - c) * target_f(b) + (b - a) * target_f(c);
-        if (std::abs(znam) < 1e-12) break;
+        fb_old = fb;     
 
-        x = -0.5 * (((target_f(b) - target_f(a)) * (c - a) * (c - b) -
-                    (a + b) * ((c - b) * target_f(a) + (a - c) * target_f(b) + (b - a) * target_f(c))) / znam);
+        float ca = c - a;
+        float cb = c - b;
+        float ab = a + b;
 
-        std::cout << "x = " << x << ", target_f(x) = " << target_f(x)
+        float znam = cb * fa + (a - c) * fb + (b - a) * fc;
+        if (std::abs(znam) < 1e-12) {
+            break;        // вырожденная парабола
+        }
+        x = -0.5f * (((fb - fa) * ca * cb - ab * znam) / znam);
+        float fx = f(x);
+
+        std::cout << "x = " << x << ", f(x) = " << fx
                   << ", a = " << a << ", b = " << b
-                  << ", target_f(b) = " << target_f(b) << ", c = " << c << "\n";
+                  << ", f(b) = " << fb << ", c = " << c << "\n";
 
-        if (x <= a || x >= c) break;
-
-        if (target_f(x) < target_f(b)) {
-            if (x < b) { c = b; b = x; }
-            else { a = b; b = x; }
-        } else {
-            if (x < b) a = x;
-            else c = x;
+        if (x <= a || x >= c) {
+            break;
         }
 
-        if (logger) logger->info("Iteration " + std::to_string(iter) + ": value = " + std::to_string(target_f(b)));
+        if (fx < fb) {
+            if (x < b) {
+                c = b;
+                fc = fb;  
+                b = x;
+                fb = fx;
+            } else { 
+                a = b;
+                fa = fb;  
+                b = x;
+                fb = fx;
+            }
+        } else {
+            if (x < b) {
+                a = x;
+                fa = fx;
+            } else { 
+                c = x;
+                fc = fx;
+            }
+        }
 
-    } while ((c - a) > EPS || fabs(target_f(b) - target_f(b_old)) > EPS);
+    } while ((c - a) > EPS || std::abs(fb - fb_old) > EPS);
 
     return b;
 }
-}
 
-template<typename T>
-auto porabola(){
-    return &porabola_name::f<T>;
+int main() {
+    float res_x = Metog_Porabola(f, -10, 2);
+    std::cout << "res : x = " << res_x << ", y = " << f(res_x) << std::endl;
+    return 0;
 }
